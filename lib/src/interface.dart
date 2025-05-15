@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+import 'package:web3dart/web3dart.dart' show Transaction;
+
 class CreateWalletResponse {
   /// The address of the wallet
   final String address;
@@ -61,6 +64,8 @@ abstract class Wallet {
     required String message,
     required String signature,
   });
+
+  Future<Uint8List> signTransaction(Transaction tx, String chainId);
 }
 
 class PaginatedResult<T> {

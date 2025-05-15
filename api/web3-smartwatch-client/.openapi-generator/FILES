@@ -7,6 +7,8 @@ doc/ApiUserAddressBalanceGet200Response.md
 doc/ApiUserAddressGet200Response.md
 doc/ApiUserAddressNftsGet200Response.md
 doc/Error.md
+doc/HealthApi.md
+doc/HealthGet200Response.md
 doc/NFT.md
 doc/NFTAsset.md
 doc/NFTTrait.md
@@ -18,6 +20,7 @@ doc/TokenType.md
 doc/UserApi.md
 lib/openapi.dart
 lib/src/api.dart
+lib/src/api/health_api.dart
 lib/src/api/user_api.dart
 lib/src/api_util.dart
 lib/src/auth/api_key_auth.dart
@@ -33,6 +36,7 @@ lib/src/model/api_user_address_get200_response.dart
 lib/src/model/api_user_address_nfts_get200_response.dart
 lib/src/model/date.dart
 lib/src/model/error.dart
+lib/src/model/health_get200_response.dart
 lib/src/model/nft.dart
 lib/src/model/nft_asset.dart
 lib/src/model/nft_trait.dart

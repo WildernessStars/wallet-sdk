@@ -5,12 +5,15 @@ import 'package:bip32/bip32.dart' as bip32;
 import 'package:openapi/openapi.dart';
 import 'package:web3_smartwatch_sdk/src/interface.dart';
 import 'package:web3_smartwatch_sdk/src/networkClient.dart';
+import 'package:web3_smartwatch_sdk/src/bridgeClient.dart';
 import 'package:web3dart/crypto.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:retry/retry.dart';
-import 'package:web3dart/web3dart.dart' show EthPrivateKey;
+import 'package:web3dart/web3dart.dart' show EthPrivateKey, Transaction,signTransactionRaw;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'provider1193.dart';
+
 
 class WalletImpl extends Wallet {
   final EthPrivateKey _ethPrivateKey;
@@ -72,10 +75,19 @@ class WalletImpl extends Wallet {
       return false;
     }
   }
+
+  @override
+  Future<Uint8List> signTransaction(Transaction tx, String chainId) async {
+    final signedTx = signTransactionRaw(tx, _ethPrivateKey, chainId: int.parse(chainId));
+    return signedTx;
+  }
+  
 }
 
 class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
+  Wallet? _cachedWallet;
   String? _currentWalletAddress;
+  final EIP1193Provider _provider;
   final FlutterSecureStorage _secureStorage;
   final RetryOptions _retryOptions;
 
@@ -89,7 +101,8 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
           maxDelay: Duration(seconds: 10),
           maxAttempts: 5,
           randomizationFactor: 0.25,
-        );
+        ),
+        _provider = EIP1193Provider();
 
   Future<String?> _loadPrivateKey(String address) async {
     final encryptedData =
@@ -126,7 +139,7 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
         final retryAfter = e.response?.headers.value('Retry-After');
         if (retryAfter != null) {
           final seconds =
-              int.tryParse(retryAfter) ?? 60; // default to 60 seconds?
+              int.tryParse(retryAfter) ?? 60; // default to 60 seconds
           await Future.delayed(Duration(seconds: seconds));
           return true;
         }
@@ -183,7 +196,7 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
           print('Error processing token: $e');
         }
         nextPageToken = response.data?.nextPageToken;
-      } while (nextPageToken != null && nextPageToken.isNotEmpty);
+      } while (nextPageToken?.isNotEmpty ?? false);
       return null;
     } catch (e) {
       print('Error in getAddressBalanceByToken: $e');
@@ -217,6 +230,7 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
 
   @override
   Future<Wallet?> getWallet() async {
+    if (_cachedWallet != null) return _cachedWallet;
     // First try to get the current wallet address from secure storage
     _currentWalletAddress ??=
         await _secureStorage.read(key: 'current_wallet_address');
@@ -227,8 +241,7 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
 
     final ethPrivateKey = EthPrivateKey.fromHex(privateKey);
     final String address = ethPrivateKey.address.hex;
-
-    return WalletImpl(
+    _cachedWallet = WalletImpl(
       address: address,
       privateKey: privateKey,
       did: "",
@@ -237,5 +250,10 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
       getAddressBalance: getAddressBalance,
       getAddressBalanceByToken: getAddressBalanceByToken,
     );
+    return _cachedWallet;
+  }
+
+  Future<EIP1193Provider> getProvider() async {
+    return _provider.setWallet(_cachedWallet! as WalletImpl);
   }
 }
