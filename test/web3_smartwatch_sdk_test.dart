@@ -28,7 +28,10 @@ void main() {
     mockOpenapi = MockOpenapi();
     mockUserApi = MockUserApi();
     when(mockOpenapi.getUserApi()).thenReturn(mockUserApi);
-    sdk = Web3SmartwatchSdk(secureStorage: mockStorage);
+    sdk = Web3SmartwatchSdk(secureStorage: mockStorage, rpcConfig: {
+      '0x1': 'https://mainnet.infura.io/v3/YOUR_KEY',
+      '0x5': 'https://goerli.infura.io/v3/YOUR_KEY',
+    });
     mockSdk = MockWeb3SmartwatchSdk();
     when(mockSdk.getUserApi()).thenReturn(mockUserApi);
   });

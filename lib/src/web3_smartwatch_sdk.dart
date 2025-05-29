@@ -9,14 +9,14 @@ import 'package:web3dart/crypto.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:retry/retry.dart';
-import 'package:web3dart/web3dart.dart' show EthPrivateKey;
+import 'package:web3dart/web3dart.dart' show EthPrivateKey, Transaction,signTransactionRaw;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'provider1193.dart';
 
 class WalletImpl extends Wallet {
   final EthPrivateKey _ethPrivateKey;
   final Future<Balance> Function(String address) _getAddressBalance;
-  final Future<Balance?> Function(String address, String contractAddress)
-      _getAddressBalanceByToken;
+  final Future<Balance?> Function(String address, String contractAddress) _getAddressBalanceByToken;
 
   WalletImpl({
     required super.address,
@@ -25,30 +25,27 @@ class WalletImpl extends Wallet {
     required super.mnemonic,
     required EthPrivateKey ethPrivateKey,
     required Future<Balance> Function(String address) getAddressBalance,
-    required Future<Balance?> Function(String address, String contractAddress)
-        getAddressBalanceByToken,
-  })  : _ethPrivateKey = ethPrivateKey,
-        _getAddressBalance = getAddressBalance,
-        _getAddressBalanceByToken = getAddressBalanceByToken,
-        super();
+    required Future<Balance?> Function(String address, String contractAddress) getAddressBalanceByToken,
+  }) : _ethPrivateKey = ethPrivateKey,
+       _getAddressBalance = getAddressBalance,
+       _getAddressBalanceByToken = getAddressBalanceByToken,
+       super();
   @override
   Future<Balance> getBalance() => _getAddressBalance(address);
 
   @override
-  Future<Balance?> getBalanceByContractAddress(String contractAddress) =>
+  Future<Balance?> getBalanceByContractAddress(String contractAddress) => 
       _getAddressBalanceByToken(address, contractAddress);
 
   @override
   Future<String> signMessage(String message) async {
     final messageBytes = utf8.encode(message);
-    final signature =
-        _ethPrivateKey.signToUint8List(messageBytes, isEIP1559: false);
+    final signature = _ethPrivateKey.signToUint8List(messageBytes, isEIP1559: false);
     return HEX.encode(signature);
   }
 
   @override
-  Future<bool> verifyMessage(
-      {required String message, required String signature}) async {
+  Future<bool> verifyMessage({required String message, required String signature}) async {
     try {
       final messageBytes = utf8.encode(message);
       final messageHash = keccak256(messageBytes);
@@ -60,22 +57,23 @@ class WalletImpl extends Wallet {
       if (v != 27 && v != 28) {
         return false;
       }
-      final msgSignature =
-          MsgSignature(bytesToUnsignedInt(r), bytesToUnsignedInt(s), v);
+      final msgSignature = MsgSignature(bytesToUnsignedInt(r), bytesToUnsignedInt(s), v);
       final publicKey = _ethPrivateKey.publicKey;
       // remove the leading 04
       final publicKeyBytes = publicKey.getEncoded(false).sublist(1);
-      final isValid =
-          isValidSignature(messageHash, msgSignature, publicKeyBytes);
+      final isValid = isValidSignature(messageHash, msgSignature, publicKeyBytes);
       return isValid;
     } catch (e) {
       return false;
     }
   }
+
 }
 
 class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
+  Wallet? _cachedWallet;
   String? _currentWalletAddress;
+  late final EIP1193Provider? _provider;
   final FlutterSecureStorage _secureStorage;
   final RetryOptions _retryOptions;
 
@@ -83,13 +81,19 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
     FlutterSecureStorage? secureStorage,
     super.basePathOverride,
     super.dio,
+    required Map<String, String> rpcConfig,
   })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
-        _retryOptions = RetryOptions(
+        _retryOptions = RetryOptions(// retry options for api calls
           delayFactor: Duration(seconds: 1),
           maxDelay: Duration(seconds: 10),
           maxAttempts: 5,
           randomizationFactor: 0.25,
-        );
+        ), 
+        _provider = EIP1193Provider( // provider for web3
+          providerResolver: (chainId) => RPCManager().getProvider(chainId),
+        ) {
+          RPCManager().initialize(rpcConfig);
+        }
 
   Future<String?> _loadPrivateKey(String address) async {
     final encryptedData =
@@ -126,7 +130,7 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
         final retryAfter = e.response?.headers.value('Retry-After');
         if (retryAfter != null) {
           final seconds =
-              int.tryParse(retryAfter) ?? 60; // default to 60 seconds?
+              int.tryParse(retryAfter) ?? 60; // default to 60 seconds
           await Future.delayed(Duration(seconds: seconds));
           return true;
         }
@@ -183,7 +187,7 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
           print('Error processing token: $e');
         }
         nextPageToken = response.data?.nextPageToken;
-      } while (nextPageToken != null);
+      } while (nextPageToken?.isNotEmpty ?? false);
       return null;
     } catch (e) {
       print('Error in getAddressBalanceByToken: $e');
@@ -217,6 +221,7 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
 
   @override
   Future<Wallet?> getWallet() async {
+    if (_cachedWallet != null) return _cachedWallet;
     // First try to get the current wallet address from secure storage
     _currentWalletAddress ??=
         await _secureStorage.read(key: 'current_wallet_address');
@@ -227,8 +232,7 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
 
     final ethPrivateKey = EthPrivateKey.fromHex(privateKey);
     final String address = ethPrivateKey.address.hex;
-
-    return WalletImpl(
+    _cachedWallet = WalletImpl(
       address: address,
       privateKey: privateKey,
       did: "",
@@ -237,5 +241,15 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
       getAddressBalance: getAddressBalance,
       getAddressBalanceByToken: getAddressBalanceByToken,
     );
+    return _cachedWallet;
+  }
+
+  Future<EIP1193Provider> getProvider() async {
+    final wallet = await getWallet();
+    if (wallet == null) {
+      throw Exception("Wallet not initialized");
+    }
+    _provider!.setWallet(wallet as WalletImpl);
+    return _provider;
   }
 }
