@@ -7,14 +7,14 @@ part of 'token_type.dart';
 // **************************************************************************
 
 const TokenType _$eRC20 = const TokenType._('eRC20');
-const TokenType _$STABLE = const TokenType._('STABLE');
+const TokenType _$NATIVE = const TokenType._('NATIVE');
 
 TokenType _$valueOf(String name) {
   switch (name) {
     case 'eRC20':
       return _$eRC20;
-    case 'STABLE':
-      return _$STABLE;
+    case 'NATIVE':
+      return _$NATIVE;
     default:
       throw new ArgumentError(name);
   }
@@ -22,13 +22,13 @@ TokenType _$valueOf(String name) {
 
 final BuiltSet<TokenType> _$values = new BuiltSet<TokenType>(const <TokenType>[
   _$eRC20,
-  _$STABLE,
+  _$NATIVE,
 ]);
 
 class _$TokenTypeMeta {
   const _$TokenTypeMeta();
   TokenType get eRC20 => _$eRC20;
-  TokenType get STABLE => _$STABLE;
+  TokenType get NATIVE => _$NATIVE;
   TokenType valueOf(String name) => _$valueOf(name);
   BuiltSet<TokenType> get values => _$values;
 }
@@ -43,11 +43,11 @@ Serializer<TokenType> _$tokenTypeSerializer = new _$TokenTypeSerializer();
 class _$TokenTypeSerializer implements PrimitiveSerializer<TokenType> {
   static const Map<String, Object> _toWire = const <String, Object>{
     'eRC20': 'ERC20',
-    'STABLE': 'STABLE',
+    'NATIVE': 'NATIVE',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
     'ERC20': 'eRC20',
-    'STABLE': 'STABLE',
+    'NATIVE': 'NATIVE',
   };
 
   @override

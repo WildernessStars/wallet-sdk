@@ -15,8 +15,8 @@ class TokenType extends EnumClass {
   static const TokenType eRC20 = _$eRC20;
 
   /// Type of the token
-  @BuiltValueEnumConst(wireName: r'STABLE')
-  static const TokenType STABLE = _$STABLE;
+  @BuiltValueEnumConst(wireName: r'NATIVE')
+  static const TokenType NATIVE = _$NATIVE;
 
   static Serializer<TokenType> get serializer => _$tokenTypeSerializer;
 

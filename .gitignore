@@ -5,3 +5,6 @@
 # Avoid committing pubspec.lock for library packages; see
 # https://dart.dev/guides/libraries/private-files#pubspeclock.
 pubspec.lock
+build
+test/web3_smartwatch_sdk_test.mocks.dart
+test/web3_smartwatch_api_test.mocks.dart

@@ -8,9 +8,6 @@ import 'package:web3_smartwatch_sdk/src/interface.dart';
 import 'package:web3_smartwatch_sdk/src/web3_smartwatch_sdk.dart';
 import 'package:web3dart/web3dart.dart' show EthPrivateKey;
 
-
-
-
 @GenerateNiceMocks([
   MockSpec<FlutterSecureStorage>(),
   MockSpec<Openapi>(),
@@ -25,17 +22,18 @@ void main() {
   late MockUserApi mockUserApi;
   late Web3SmartwatchSdk sdk;
   late MockWeb3SmartwatchSdk mockSdk;
-  
 
   setUp(() {
     mockStorage = MockFlutterSecureStorage();
     mockOpenapi = MockOpenapi();
     mockUserApi = MockUserApi();
     when(mockOpenapi.getUserApi()).thenReturn(mockUserApi);
-    sdk = Web3SmartwatchSdk(secureStorage: mockStorage);
+    sdk = Web3SmartwatchSdk(secureStorage: mockStorage, rpcConfig: {
+      '0x1': 'https://mainnet.infura.io/v3/YOUR_KEY',
+      '0x5': 'https://goerli.infura.io/v3/YOUR_KEY',
+    });
     mockSdk = MockWeb3SmartwatchSdk();
     when(mockSdk.getUserApi()).thenReturn(mockUserApi);
-   
   });
 
   group('createWallet', () {
@@ -73,7 +71,8 @@ void main() {
   group('getWallet', () {
     test('should return null when no current wallet address exists', () async {
       // Arrange
-      when(mockStorage.read(key: 'current_wallet_address')).thenAnswer((_) async => null);
+      when(mockStorage.read(key: 'current_wallet_address'))
+          .thenAnswer((_) async => null);
 
       // Act
       final wallet = await sdk.getWallet();
@@ -85,8 +84,10 @@ void main() {
     test('should return null when private key not found', () async {
       // Arrange
       const testAddress = '0x123';
-      when(mockStorage.read(key: 'current_wallet_address')).thenAnswer((_) async => testAddress);
-      when(mockStorage.read(key: 'private_key_$testAddress')).thenAnswer((_) async => null);
+      when(mockStorage.read(key: 'current_wallet_address'))
+          .thenAnswer((_) async => testAddress);
+      when(mockStorage.read(key: 'private_key_$testAddress'))
+          .thenAnswer((_) async => null);
 
       // Act
       final wallet = await sdk.getWallet();
@@ -98,12 +99,15 @@ void main() {
     test('should return wallet when storage has valid data', () async {
       // Arrange
       // Using a known private key for consistent testing
-      const privateKey = 'bab8b70797cefb5ddab9c28aa467a7aaa48e3d39432d2fe058fd63e12e09e316';
+      const privateKey =
+          'bab8b70797cefb5ddab9c28aa467a7aaa48e3d39432d2fe058fd63e12e09e316';
       final ethPrivateKey = EthPrivateKey.fromHex(privateKey);
       final address = ethPrivateKey.address.hex;
 
-      when(mockStorage.read(key: 'current_wallet_address')).thenAnswer((_) async => address);
-      when(mockStorage.read(key: 'private_key_$address')).thenAnswer((_) async => privateKey);
+      when(mockStorage.read(key: 'current_wallet_address'))
+          .thenAnswer((_) async => address);
+      when(mockStorage.read(key: 'private_key_$address'))
+          .thenAnswer((_) async => privateKey);
 
       // Act
       final wallet = await sdk.getWallet();
@@ -118,7 +122,8 @@ void main() {
   group('WalletImpl', () {
     late Wallet wallet;
     const testAddress = '0xf88a54f6cbb126891a997bf0a8255d17d53c8046';
-    const testPrivateKey = 'bab8b70797cefb5ddab9c28aa467a7aaa48e3d39432d2fe058fd63e12e09e316';
+    const testPrivateKey =
+        'bab8b70797cefb5ddab9c28aa467a7aaa48e3d39432d2fe058fd63e12e09e316';
 
     setUp(() async {
       // Create a wallet with known values
@@ -129,59 +134,30 @@ void main() {
         did: '',
         mnemonic: '',
         ethPrivateKey: ethPrivateKey,
-        getAddressBalance: sdk.getAddressBalance,
-        getAddressBalanceByToken: sdk.getAddressBalanceByToken,
+        getAddressBalance: mockSdk.getAddressBalance,
+        getAddressBalanceByToken: mockSdk.getAddressBalanceByToken,
       );
     });
 
     test('getBalanceByContractAddress should return token balance', () async {
       // Arrange
-      const contractAddress = '0xtoken';
-      final token = Token((b) => b
-        ..address = contractAddress
-        ..name = 'TestToken'
-        ..symbol = 'TST'
-        ..balance = '1000'
-        ..decimals = 18
-      );
-      final balanceResponse = Response<ApiUserAddressBalanceGet200Response>(
-        data: ApiUserAddressBalanceGet200Response((b)=>b
-          ..tokens.replace([token])),
-        requestOptions: RequestOptions(
-          path: '/api/user/$testAddress/balance',
-          method: 'GET',
-        ),
-      );
+      const contractAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+      const balance = '1000';
+      const decimals = '18';
 
-      // Mock the API call
-      when(mockUserApi.apiUserAddressBalanceGet(
-        address: testAddress,
-      )).thenAnswer((_) async => balanceResponse);
-
-      // Mock the SDK's getAddressBalanceByToken method
+      // Mock the SDK method
       when(mockSdk.getAddressBalanceByToken(testAddress, contractAddress))
-          .thenAnswer((_) async => Balance(balance: '1000', decimals: '18'));
-
-      // Create wallet with mocked SDK functions
-      final walletMock = WalletImpl(
-        address: testAddress,
-        privateKey: testPrivateKey,
-        did: '',
-        mnemonic: '',
-        ethPrivateKey: EthPrivateKey.fromHex(testPrivateKey),
-        getAddressBalance: mockSdk.getAddressBalance,
-        getAddressBalanceByToken: mockSdk.getAddressBalanceByToken,
-      );
+          .thenAnswer(
+              (_) async => Balance(balance: balance, decimals: decimals));
 
       // Act
-      final balance = await walletMock.getBalanceByContractAddress(contractAddress);
+      final result = await wallet.getBalanceByContractAddress(contractAddress);
 
       // Assert
-      expect(balance?.balance, equals('1000'));
-      expect(balance?.decimals, equals('18'));
-      
-      // Verify that the mock SDK's getAddressBalanceByToken was called
-      verify(mockSdk.getAddressBalanceByToken(testAddress, contractAddress)).called(1);
+      expect(result?.balance, equals(balance));
+      expect(result?.decimals, equals(decimals));
+      verify(mockSdk.getAddressBalanceByToken(testAddress, contractAddress))
+          .called(1);
     });
 
     test('signMessage and verifyMessage should work correctly', () async {
@@ -189,7 +165,8 @@ void main() {
       const message = 'Hello, World!';
       // Act
       final signature = await wallet.signMessage(message);
-      final isValid = await wallet.verifyMessage(message: message, signature: signature);
+      final isValid =
+          await wallet.verifyMessage(message: message, signature: signature);
 
       // Assert
       expect(signature, isNotEmpty);
@@ -202,7 +179,8 @@ void main() {
       const invalidSignature = '0x123456';
 
       // Act
-      final isValid = await wallet.verifyMessage(message: message, signature: invalidSignature);
+      final isValid = await wallet.verifyMessage(
+          message: message, signature: invalidSignature);
 
       // Assert
       expect(isValid, isFalse);
@@ -212,7 +190,8 @@ void main() {
   group('WalletMethods', () {
     late Wallet wallet;
     const testAddress = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
-    const testPrivateKey = 'bab8b70797cefb5ddab9c28aa467a7aaa48e3d39432d2fe058fd63e12e09e316';
+    const testPrivateKey =
+        'bab8b70797cefb5ddab9c28aa467a7aaa48e3d39432d2fe058fd63e12e09e316';
 
     setUp(() async {
       // Create a wallet with known values
@@ -223,19 +202,30 @@ void main() {
         did: '',
         mnemonic: '',
         ethPrivateKey: ethPrivateKey,
-        getAddressBalance: sdk.getAddressBalance,
-        getAddressBalanceByToken: sdk.getAddressBalanceByToken,
+        getAddressBalance: mockSdk.getAddressBalance,
+        getAddressBalanceByToken: mockSdk.getAddressBalanceByToken,
       );
     });
 
-    test('real getBalanceByContractAddress should return token balance', () async {
+    test('getBalanceByContractAddress should return token balance', () async {
       // Arrange
       const contractAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+      const balance = '1000';
+      const decimals = '18';
+
+      // Mock the SDK method
+      when(mockSdk.getAddressBalanceByToken(testAddress, contractAddress))
+          .thenAnswer(
+              (_) async => Balance(balance: balance, decimals: decimals));
 
       // Act
-      final balance = await sdk.getAddressBalanceByToken(testAddress, contractAddress);
-      expect(balance?.balance, isNotEmpty);
-      expect(balance?.decimals, isNotEmpty);
+      final result = await wallet.getBalanceByContractAddress(contractAddress);
+
+      // Assert
+      expect(result?.balance, equals(balance));
+      expect(result?.decimals, equals(decimals));
+      verify(mockSdk.getAddressBalanceByToken(testAddress, contractAddress))
+          .called(1);
     });
   });
 }

@@ -47,14 +47,13 @@ Please follow the [installation procedure](#installation--usage) and then run th
 import 'package:openapi/openapi.dart';
 
 
-final api = Openapi().getUserApi();
-final String address = 0x742d35Cc6634C0532925a3b844Bc454e4438f44e; // String | Ethereum address of the user
+final api = Openapi().getHealthApi();
 
 try {
-    final response = await api.apiSearchAddressAddressGet(address);
+    final response = await api.healthGet();
     print(response);
 } catch on DioException (e) {
-    print("Exception when calling UserApi->apiSearchAddressAddressGet: $e\n");
+    print("Exception when calling HealthApi->healthGet: $e\n");
 }
 
 ```
@@ -65,6 +64,7 @@ All URIs are relative to *http://localhost:8080*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+[*HealthApi*](doc/HealthApi.md) | [**healthGet**](doc/HealthApi.md#healthget) | **GET** /health | Check server health
 [*UserApi*](doc/UserApi.md) | [**apiSearchAddressAddressGet**](doc/UserApi.md#apisearchaddressaddressget) | **GET** /api/search/address/{address} | Get DID by wallet address
 [*UserApi*](doc/UserApi.md) | [**apiSearchDidDidGet**](doc/UserApi.md#apisearchdiddidget) | **GET** /api/search/did/{did} | Get wallet address by DID
 [*UserApi*](doc/UserApi.md) | [**apiUserAddressBalanceGet**](doc/UserApi.md#apiuseraddressbalanceget) | **GET** /api/user/{address}/balance | Get token balances
@@ -80,6 +80,7 @@ Class | Method | HTTP request | Description
  - [ApiUserAddressGet200Response](doc/ApiUserAddressGet200Response.md)
  - [ApiUserAddressNftsGet200Response](doc/ApiUserAddressNftsGet200Response.md)
  - [Error](doc/Error.md)
+ - [HealthGet200Response](doc/HealthGet200Response.md)
  - [NFT](doc/NFT.md)
  - [NFTAsset](doc/NFTAsset.md)
  - [NFTTrait](doc/NFTTrait.md)

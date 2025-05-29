@@ -111,7 +111,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **apiUserAddressBalanceGet**
-> ApiUserAddressBalanceGet200Response apiUserAddressBalanceGet(address, tokenAddresses, includeZeroBalance, pageToken)
+> ApiUserAddressBalanceGet200Response apiUserAddressBalanceGet(address, includeZeroBalance, pageToken)
 
 Get token balances
 
@@ -127,12 +127,11 @@ import 'package:openapi/api.dart';
 
 final api = Openapi().getUserApi();
 final String address = 0x742d35Cc6634C0532925a3b844Bc454e4438f44e; // String | Ethereum address of the user
-final String tokenAddresses = 0xdac17f958d2ee523a2206206994597c13d831ec7,0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48; // String | Comma-separated list of token contract addresses
 final bool includeZeroBalance = true; // bool | Include tokens with zero balance
 final String pageToken = pageToken_example; // String | Token for pagination, obtained from nextPageToken in previous response
 
 try {
-    final response = api.apiUserAddressBalanceGet(address, tokenAddresses, includeZeroBalance, pageToken);
+    final response = api.apiUserAddressBalanceGet(address, includeZeroBalance, pageToken);
     print(response);
 } catch on DioException (e) {
     print('Exception when calling UserApi->apiUserAddressBalanceGet: $e\n');
@@ -144,7 +143,6 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **address** | **String**| Ethereum address of the user | 
- **tokenAddresses** | **String**| Comma-separated list of token contract addresses | [optional] 
  **includeZeroBalance** | **bool**| Include tokens with zero balance | [optional] [default to false]
  **pageToken** | **String**| Token for pagination, obtained from nextPageToken in previous response | [optional] 
 

@@ -36,7 +36,7 @@ abstract class Token implements Built<Token, TokenBuilder> {
 
   @BuiltValueField(wireName: r'type')
   TokenType? get type;
-  // enum typeEnum {  ERC20,  STABLE,  };
+  // enum typeEnum {  ERC20,  NATIVE,  };
 
   /// Token decimals
   @BuiltValueField(wireName: r'decimals')

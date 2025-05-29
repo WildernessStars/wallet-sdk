@@ -20,6 +20,7 @@ import 'package:openapi/src/model/api_user_address_balance_get200_response.dart'
 import 'package:openapi/src/model/api_user_address_get200_response.dart';
 import 'package:openapi/src/model/api_user_address_nfts_get200_response.dart';
 import 'package:openapi/src/model/error.dart';
+import 'package:openapi/src/model/health_get200_response.dart';
 import 'package:openapi/src/model/nft.dart';
 import 'package:openapi/src/model/nft_asset.dart';
 import 'package:openapi/src/model/nft_trait.dart';
@@ -38,6 +39,7 @@ part 'serializers.g.dart';
   ApiUserAddressGet200Response,
   ApiUserAddressNftsGet200Response,
   Error,
+  HealthGet200Response,
   NFT,
   NFTAsset,
   NFTTrait,

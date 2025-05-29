@@ -202,7 +202,6 @@ class UserApi {
   ///
   /// Parameters:
   /// * [address] - Ethereum address of the user
-  /// * [tokenAddresses] - Comma-separated list of token contract addresses
   /// * [includeZeroBalance] - Include tokens with zero balance
   /// * [pageToken] - Token for pagination, obtained from nextPageToken in previous response
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -217,7 +216,6 @@ class UserApi {
   Future<Response<ApiUserAddressBalanceGet200Response>>
       apiUserAddressBalanceGet({
     required String address,
-    String? tokenAddresses,
     bool? includeZeroBalance = false,
     String? pageToken,
     CancelToken? cancelToken,
@@ -251,9 +249,6 @@ class UserApi {
     );
 
     final _queryParameters = <String, dynamic>{
-      if (tokenAddresses != null)
-        r'token_addresses': encodeQueryParameter(
-            _serializers, tokenAddresses, const FullType(String)),
       if (includeZeroBalance != null)
         r'include_zero_balance': encodeQueryParameter(
             _serializers, includeZeroBalance, const FullType(bool)),
