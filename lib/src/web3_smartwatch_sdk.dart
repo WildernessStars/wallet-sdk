@@ -13,10 +13,12 @@ import 'package:web3dart/web3dart.dart' show EthPrivateKey, Transaction,signTran
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'provider1193.dart';
 
+
 class WalletImpl extends Wallet {
   final EthPrivateKey _ethPrivateKey;
   final Future<Balance> Function(String address) _getAddressBalance;
-  final Future<Balance?> Function(String address, String contractAddress) _getAddressBalanceByToken;
+  final Future<Balance?> Function(String address, String contractAddress)
+      _getAddressBalanceByToken;
 
   WalletImpl({
     required super.address,
@@ -25,27 +27,30 @@ class WalletImpl extends Wallet {
     required super.mnemonic,
     required EthPrivateKey ethPrivateKey,
     required Future<Balance> Function(String address) getAddressBalance,
-    required Future<Balance?> Function(String address, String contractAddress) getAddressBalanceByToken,
-  }) : _ethPrivateKey = ethPrivateKey,
-       _getAddressBalance = getAddressBalance,
-       _getAddressBalanceByToken = getAddressBalanceByToken,
-       super();
+    required Future<Balance?> Function(String address, String contractAddress)
+        getAddressBalanceByToken,
+  })  : _ethPrivateKey = ethPrivateKey,
+        _getAddressBalance = getAddressBalance,
+        _getAddressBalanceByToken = getAddressBalanceByToken,
+        super();
   @override
   Future<Balance> getBalance() => _getAddressBalance(address);
 
   @override
-  Future<Balance?> getBalanceByContractAddress(String contractAddress) => 
+  Future<Balance?> getBalanceByContractAddress(String contractAddress) =>
       _getAddressBalanceByToken(address, contractAddress);
 
   @override
   Future<String> signMessage(String message) async {
     final messageBytes = utf8.encode(message);
-    final signature = _ethPrivateKey.signToUint8List(messageBytes, isEIP1559: false);
+    final signature =
+        _ethPrivateKey.signToUint8List(messageBytes, isEIP1559: false);
     return HEX.encode(signature);
   }
 
   @override
-  Future<bool> verifyMessage({required String message, required String signature}) async {
+  Future<bool> verifyMessage(
+      {required String message, required String signature}) async {
     try {
       final messageBytes = utf8.encode(message);
       final messageHash = keccak256(messageBytes);
@@ -57,17 +62,25 @@ class WalletImpl extends Wallet {
       if (v != 27 && v != 28) {
         return false;
       }
-      final msgSignature = MsgSignature(bytesToUnsignedInt(r), bytesToUnsignedInt(s), v);
+      final msgSignature =
+          MsgSignature(bytesToUnsignedInt(r), bytesToUnsignedInt(s), v);
       final publicKey = _ethPrivateKey.publicKey;
       // remove the leading 04
       final publicKeyBytes = publicKey.getEncoded(false).sublist(1);
-      final isValid = isValidSignature(messageHash, msgSignature, publicKeyBytes);
+      final isValid =
+          isValidSignature(messageHash, msgSignature, publicKeyBytes);
       return isValid;
     } catch (e) {
       return false;
     }
   }
 
+  @override
+  Future<Uint8List> signTransaction(Transaction tx, String chainId) async {
+    final signedTx = signTransactionRaw(tx, _ethPrivateKey, chainId: int.parse(chainId));
+    return signedTx;
+  }
+  
 }
 
 class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
