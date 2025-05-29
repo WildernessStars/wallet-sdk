@@ -10,6 +10,8 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
+  flutter:
+    sdk: flutter
   openapi_generator_annotations: ^6.1.0
   openapi:
     path: ./api/web3-smartwatch-client
@@ -20,7 +22,8 @@ dependencies:
   retry: ^3.1.2
   mockito: ^5.4.5
   flutter_inappwebview: ^6.0.0
-  rlp: ^2.0.0
+  http: ^1.1.0
+  material: ^1.0.0+2
 
 dev_dependencies:
   lints: ^5.0.0

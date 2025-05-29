@@ -24,6 +24,10 @@ void main() {
     sdk = Web3SmartwatchSdk(
       dio: dio,
       secureStorage: mockStorage,
+      rpcConfig: {
+        '0x1': 'https://mainnet.infura.io/v3/YOUR_KEY',
+        '0x5': 'https://goerli.infura.io/v3/YOUR_KEY',
+      },
     );
 
     // Setup the current wallet for tests

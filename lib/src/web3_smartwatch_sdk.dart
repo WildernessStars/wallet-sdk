@@ -5,7 +5,6 @@ import 'package:bip32/bip32.dart' as bip32;
 import 'package:openapi/openapi.dart';
 import 'package:web3_smartwatch_sdk/src/interface.dart';
 import 'package:web3_smartwatch_sdk/src/networkClient.dart';
-import 'package:web3_smartwatch_sdk/src/bridgeClient.dart';
 import 'package:web3dart/crypto.dart';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -87,7 +86,7 @@ class WalletImpl extends Wallet {
 class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
   Wallet? _cachedWallet;
   String? _currentWalletAddress;
-  final EIP1193Provider _provider;
+  late final EIP1193Provider? _provider;
   final FlutterSecureStorage _secureStorage;
   final RetryOptions _retryOptions;
 
@@ -95,14 +94,19 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
     FlutterSecureStorage? secureStorage,
     super.basePathOverride,
     super.dio,
+    required Map<String, String> rpcConfig,
   })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
-        _retryOptions = RetryOptions(
+        _retryOptions = RetryOptions(// retry options for api calls
           delayFactor: Duration(seconds: 1),
           maxDelay: Duration(seconds: 10),
           maxAttempts: 5,
           randomizationFactor: 0.25,
-        ),
-        _provider = EIP1193Provider();
+        ), 
+        _provider = EIP1193Provider( // provider for web3
+          providerResolver: (chainId) => RPCManager().getProvider(chainId),
+        ) {
+          RPCManager().initialize(rpcConfig);
+        }
 
   Future<String?> _loadPrivateKey(String address) async {
     final encryptedData =
@@ -254,6 +258,11 @@ class Web3SmartwatchSdk extends Openapi implements Web3SmartwatchInterface {
   }
 
   Future<EIP1193Provider> getProvider() async {
-    return _provider.setWallet(_cachedWallet! as WalletImpl);
+    final wallet = await getWallet();
+    if (wallet == null) {
+      throw Exception("Wallet not initialized");
+    }
+    _provider!.setWallet(wallet as WalletImpl);
+    return _provider;
   }
 }
